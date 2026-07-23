@@ -7,6 +7,7 @@ export const CATS = [
   { key: "food", label: "🍜 Food", q: '["amenity"~"restaurant|fast_food|food_court"]' },
   { key: "coffee", label: "☕ Coffee", q: '["amenity"~"cafe|ice_cream|juice_bar"]' },
   { key: "fun", label: "🎳 Fun", q: '["leisure"~"bowling_alley|amusement_arcade|escape_game|miniature_golf|park|trampoline_park"]' },
+  { key: "shops", label: "🛍️ Shops", q: '["shop"~"second_hand|charity|clothes|vintage|books|gift|mall|department_store"]' },
 ];
 
 export function getLocation() {

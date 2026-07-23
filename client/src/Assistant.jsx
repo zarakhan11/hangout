@@ -102,9 +102,26 @@ const BOOT = (h, name) => [
 
 export default function Assistant({ hangout = null, draft = null, onAddPlace = null }) {
   const profile = getProfile();
-  const [bootDone, setBootDone] = useState(0); // lines revealed
   const bootLines = BOOT(hangout, profile?.name);
-  const [msgs, setMsgs] = useState([]);
+
+  // Chat is saved per hangout (and per account), so it survives reloads
+  const chatKey = `hangout:chat:${profile?.token?.slice(0, 8) || "anon"}:${hangout?.id || "planning"}`;
+  const [msgs, setMsgs] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(chatKey)) || [];
+    } catch {
+      return [];
+    }
+  });
+  const [bootDone, setBootDone] = useState(() => (msgs.length > 0 ? bootLines.length : 0));
+
+  useEffect(() => {
+    if (msgs.length > 0) localStorage.setItem(chatKey, JSON.stringify(msgs.slice(-30)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [msgs]);
+
+  // every idea JAX has already pitched in this chat — sent so it won't repeat
+  const shownIdeas = msgs.flatMap((m) => (m.ideas || []).map((i) => i.title)).filter((t) => !t.startsWith("📍"));
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [voice, setVoice] = useState(false);
@@ -251,6 +268,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
             role: m.who === "me" ? "user" : "assistant",
             text: m.text,
           })),
+          exclude: shownIdeas,
         }),
       });
       const data = await res.json();
