@@ -168,7 +168,19 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
         movie: ["cinema", "theatre"],
         bowl: ["bowling"],
         arcade: ["amusement"],
-        park: ["park"],
+        park: ["park", "garden"],
+        museum: ["museum", "gallery", "arts"],
+        karaoke: ["karaoke"],
+        club: ["nightclub", "bar"],
+        gym: ["fitness", "sports"],
+        pool: ["swimming"],
+        climb: ["climbing"],
+        skate: ["skate", "ice_rink"],
+        golf: ["golf", "miniature"],
+        book: ["books", "library"],
+        escape: ["escape"],
+        beach: ["beach"],
+        dessert: ["ice", "bakery", "confectionery", "chocolate"],
       };
       const words = q.split(/\W+/).filter((w) => w.length > 3);
       const expanded = new Set(words);
