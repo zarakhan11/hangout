@@ -2,19 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { getProfile } from "./profile.js";
 import { CATS, fetchNearby, getLocation } from "./Nearby.jsx";
 
-const QUICKS = [
-  "What should we do?",
-  "We're broke — free ideas?",
-  "Something we've never done",
-  "Chill night ideas",
-];
+const QUICKS = ["What should we do?", "Where should we go?", "Cheap ideas?"];
 
-const PLANNING_QUICKS = [
-  "Help me plan this",
-  "Where should we go?",
-  "Cheap ideas?",
-  "Surprise me",
-];
+const PLANNING_QUICKS = ["Help me plan this", "Where should we go?", "Cheap ideas?"];
 
 /* ---------- voice ---------- */
 
@@ -77,7 +67,7 @@ function TypeBubble({ text, ideas, instant, onDone, onTick, onAddPlace }) {
 
   const typing = n < text.length;
   return (
-    <div className="bubble bot term">
+    <div className="bubble bot">
       {text.slice(0, n)}
       {typing && <span className="caret">▊</span>}
       {!typing && ideas?.length > 0 && (
@@ -105,19 +95,10 @@ function TypeBubble({ text, ideas, instant, onDone, onTick, onAddPlace }) {
 
 /* ---------- boot sequence ---------- */
 
-const BOOT = (h, name) =>
-  h
-    ? [
-        "▸ JAX CORE v2.1 — INITIALIZING…",
-        "▸ LINKING GROUP DATAFEED… OK",
-        `▸ ${Math.max(h.responses.length, 1)} ATTENDEE${h.responses.length === 1 ? "" : "S"} DETECTED · VIBE PROFILES LOADED`,
-        `▸ ALL SYSTEMS ONLINE. ${name ? `GOOD TO SEE YOU, ${name.toUpperCase()}.` : "READY."}`,
-      ]
-    : [
-        "▸ JAX CORE v2.1 — INITIALIZING…",
-        "▸ PLANNING MODE ENGAGED",
-        `▸ ALL SYSTEMS ONLINE. ${name ? `LET'S BUILD SOMETHING, ${name.toUpperCase()}.` : "READY."}`,
-      ];
+const BOOT = (h, name) => [
+  "▸ JAX — INITIALIZING…",
+  `▸ ONLINE. ${name ? `GOOD TO SEE YOU, ${name.toUpperCase()}.` : "READY."}`,
+];
 
 export default function Assistant({ hangout = null, draft = null, onAddPlace = null }) {
   const profile = getProfile();
@@ -243,8 +224,8 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
       setMsgs([{
         who: "bot",
         text: hangout
-          ? `At your service. I've analyzed "${hangout.title}" — ask me anything, or select a directive below.`
-          : "At your service. Tell me what kind of hangout you're going for — I'll pitch ideas, and with local intel enabled I'll find real spots you can add straight to the plan.",
+          ? `At your service. Ask me anything about "${hangout.title}" — or tap a suggestion below.`
+          : "At your service. Tell me what kind of hangout you want and I'll pitch ideas — turn on 📡 local intel and I'll find real spots near you.",
       }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -292,7 +273,6 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
     <div className="card buddy-card holo">
       <i className="hud-corner tl" /><i className="hud-corner tr" />
       <i className="hud-corner bl" /><i className="hud-corner br" />
-      <div className="scan-beam" />
 
       <div className="buddy-head">
         <div className="buddy-face"><Orb active={busy || booting} /></div>
@@ -322,11 +302,13 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
         </button>
       </div>
 
-      <div className="boot term">
-        {bootLines.slice(0, bootDone).map((l, i) => (
-          <div className="boot-line" key={i}>{l}</div>
-        ))}
-      </div>
+      {booting && (
+        <div className="boot term">
+          {bootLines.slice(0, bootDone).map((l, i) => (
+            <div className="boot-line" key={i}>{l}</div>
+          ))}
+        </div>
+      )}
 
       {!booting && (
         <>
@@ -346,7 +328,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
                 />
               )
             )}
-            {busy && <div className="bubble bot term typing">▊ processing…</div>}
+            {busy && <div className="bubble bot typing">▊ thinking…</div>}
             <div ref={bottom} />
           </div>
 

@@ -109,13 +109,17 @@ function Canceled({ h }) {
 
 /* ---------- edit panel ---------- */
 
+function localISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function nextDays(n = 14) {
   const out = [];
   const today = new Date();
   for (let i = 0; i < n; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    out.push(d.toISOString().slice(0, 10));
+    out.push(localISO(d));
   }
   return out;
 }

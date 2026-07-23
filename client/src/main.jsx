@@ -1,6 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+
+// Every screen change starts at the top of the page
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 import Home from "./Home.jsx";
 import HangoutPage from "./HangoutPage.jsx";
 import Onboarding from "./Onboarding.jsx";
@@ -20,6 +29,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home profile={profile} onResetProfile={() => setProfile(null)} />} />
         <Route path="/h/:id" element={<HangoutPage profile={profile} />} />

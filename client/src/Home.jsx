@@ -57,13 +57,18 @@ function MyHangouts() {
   );
 }
 
+function localISO(d) {
+  // Local date, not UTC — toISOString() shifts the date at night!
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function nextDays(n = 14) {
   const out = [];
   const today = new Date();
   for (let i = 0; i < n; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    out.push(d.toISOString().slice(0, 10));
+    out.push(localISO(d));
   }
   return out;
 }
@@ -146,6 +151,7 @@ export default function Home({ profile, onResetProfile }) {
 
         <div className="field">
           <span>Which days could work?</span>
+          <em className="hint">Tap several — the more days you give, the easier it is for everyone to match.</em>
           <div className="chip-row scroll">
             {candidates.map((d, i) => (
               <button

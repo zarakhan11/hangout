@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Avatar, { makeSeed } from "./avatar.jsx";
 import { VIBES } from "./api.js";
 import { saveProfile } from "./profile.js";
@@ -189,6 +189,9 @@ function LogIn({ onDone, toSignup }) {
 
 export default function Onboarding({ onDone }) {
   const [step, setStep] = useState("tour"); // tour → signup | login
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
   if (step === "tour") return <Tour onDone={() => setStep("signup")} />;
   if (step === "login") return <LogIn onDone={onDone} toSignup={() => setStep("signup")} />;
   return <SignUp onDone={onDone} toLogin={() => setStep("login")} />;
