@@ -281,11 +281,9 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
           <small className="nova-status">
             {booting
               ? "◌ initializing…"
-              : premium
-                ? "★ premium — unlimited access"
-                : remaining != null
-                  ? `● online — ${remaining} free ${remaining === 1 ? "query" : "queries"} left`
-                  : "● online — hangout intelligence"}
+              : remaining != null && !premium
+                ? `● online · ${remaining} free ${remaining === 1 ? "query" : "queries"} left`
+                : "● online · your hangout assistant"}
           </small>
         </div>
         <button

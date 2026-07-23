@@ -14,12 +14,12 @@ const SLIDES = [
   {
     emoji: "📤",
     title: "One link does everything",
-    text: "Pick the days and times that could work, share one link. Friends tap when they're free and vote on the spot — when everyone's in, the plan locks itself. Time, place, done.",
+    text: "Pick the days and times that could work, then share one link. Friends tap when they're free and vote on the spot. When everyone's in, the plan locks itself. Time, place, done.",
   },
   {
     emoji: "🤖",
     title: "Meet JAX",
-    text: "Your personal hangout AI. It suggests ideas tuned to your group's vibe, finds real spots near you, and even talks out loud. You get free queries every month — go unlimited for $3/mo.",
+    text: "Your personal JAX assistant. It suggests ideas tuned to your group's vibe, finds real spots near you, and can even talk out loud. Ask it anything while you plan.",
   },
   {
     emoji: "📅",
