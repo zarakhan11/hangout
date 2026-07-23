@@ -1,0 +1,20 @@
+{
+  "name": "hangout",
+  "version": "1.0.0",
+  "description": "The group scheduler that actually decides — share a link, tap when you're free, Hangout picks the time and place.",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "build": "cd client && npm install && npm run build",
+    "setup": "npm install && npm run build"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "nanoid": "^5.0.7"
+  }
+}
