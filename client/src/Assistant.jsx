@@ -247,6 +247,10 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
           question, vibes: profile?.vibes || [], nearby: nearby || [],
           clientToken: profile?.token || "",
           draft: draft || undefined,
+          history: msgs.slice(-8).map((m) => ({
+            role: m.who === "me" ? "user" : "assistant",
+            text: m.text,
+          })),
         }),
       });
       const data = await res.json();
