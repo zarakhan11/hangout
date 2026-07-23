@@ -431,7 +431,10 @@ app.get("/api/hangouts/:id/ideas", async (req, res) => {
 
 /* ---------- JAX premium ---------- */
 
-const FREE_JAX_QUERIES = 2; // per device per month
+// Paywall is OFF by default while testing — everyone gets unlimited JAX.
+// To turn monetization on later, set env var JAX_PAYWALL=on (2 free/month, then $3).
+const PAYWALL_ON = process.env.JAX_PAYWALL === "on";
+const FREE_JAX_QUERIES = 2; // per account per month, when the paywall is on
 const premiumCodes = () =>
   (process.env.PREMIUM_CODES || "")
     .split(",")
@@ -443,6 +446,7 @@ function isPremium(token) {
 }
 
 function jaxStatus(token) {
+  if (!PAYWALL_ON) return { premium: true, remaining: Infinity };
   if (!token) return { premium: false, remaining: 0 };
   if (isPremium(token)) return { premium: true, remaining: Infinity };
   const month = new Date().toISOString().slice(0, 7);
