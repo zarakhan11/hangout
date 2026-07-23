@@ -57,6 +57,30 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS squads (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    emoji TEXT DEFAULT '🎈',
+    owner TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS squad_members (
+    squad_id TEXT NOT NULL REFERENCES squads(id),
+    user_id TEXT NOT NULL REFERENCES users(id),
+    joined_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (squad_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS memories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hangout_id TEXT NOT NULL REFERENCES hangouts(id),
+    user_name TEXT NOT NULL,
+    photo TEXT NOT NULL,
+    caption TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS jax_usage (
     token TEXT NOT NULL,
     month TEXT NOT NULL,
@@ -78,6 +102,10 @@ for (const stmt of [
   "ALTER TABLE hangouts ADD COLUMN canceled_at TEXT",
   "ALTER TABLE premium_tokens ADD COLUMN stripe_customer TEXT",
   "ALTER TABLE premium_tokens ADD COLUMN stripe_sub TEXT",
+  "ALTER TABLE hangouts ADD COLUMN squad_id TEXT",
+  "ALTER TABLE hangouts ADD COLUMN surprise INTEGER DEFAULT 0",
+  "ALTER TABLE hangouts ADD COLUMN revealed INTEGER DEFAULT 0",
+  "ALTER TABLE responses ADD COLUMN bailed INTEGER DEFAULT 0",
 ]) {
   try {
     db.exec(stmt);

@@ -69,13 +69,16 @@ function getHangout(id) {
   const h = db.prepare("SELECT * FROM hangouts WHERE id = ?").get(id);
   if (!h) return null;
   const responses = db
-    .prepare("SELECT name, slots, place_vote, interests, avatar, client_token, created_at FROM responses WHERE hangout_id = ? ORDER BY id")
+    .prepare("SELECT name, slots, place_vote, interests, avatar, client_token, bailed, created_at FROM responses WHERE hangout_id = ? ORDER BY id")
     .all(id);
   return {
     id: h.id,
     title: h.title,
     creator: h.creator,
     note: h.note,
+    squadId: h.squad_id || null,
+    surprise: Boolean(h.surprise),
+    revealed: Boolean(h.revealed),
     days: JSON.parse(h.days),
     blocks: JSON.parse(h.blocks),
     places: JSON.parse(h.places),
@@ -91,6 +94,7 @@ function getHangout(id) {
       placeVote: r.place_vote,
       interests: JSON.parse(r.interests || "[]"),
       avatar: r.avatar || "",
+      bailed: Boolean(r.bailed),
     })),
   };
 }
@@ -220,7 +224,7 @@ app.get("/api/auth/me", (req, res) => {
 // ---------- API ----------
 
 app.post("/api/hangouts", (req, res) => {
-  const { title, creator, note, days, blocks, places, expected } = req.body || {};
+  const { title, creator, note, days, blocks, places, expected, squadId, surprise, clientToken } = req.body || {};
   if (!title?.trim() || !creator?.trim()) {
     return res.status(400).json({ error: "Title and your name are required." });
   }
@@ -233,11 +237,19 @@ app.post("/api/hangouts", (req, res) => {
   const cleanPlaces = Array.isArray(places)
     ? [...new Set(places.map((p) => String(p).trim()).filter(Boolean))].slice(0, 8)
     : [];
+  // squad hangouts: only members can create one for the squad
+  let cleanSquad = null;
+  if (squadId) {
+    const u = userFromToken(clientToken);
+    const member = u && db.prepare("SELECT 1 FROM squad_members WHERE squad_id = ? AND user_id = ?").get(squadId, u.id);
+    if (member) cleanSquad = squadId;
+  }
+
   const id = nanoid(8);
   const creatorKey = nanoid(16);
   db.prepare(
-    `INSERT INTO hangouts (id, creator_key, title, creator, note, days, blocks, places, expected)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO hangouts (id, creator_key, title, creator, note, days, blocks, places, expected, squad_id, surprise)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     creatorKey,
@@ -247,7 +259,9 @@ app.post("/api/hangouts", (req, res) => {
     JSON.stringify(days),
     JSON.stringify(blocks),
     JSON.stringify(cleanPlaces),
-    Math.max(0, Math.min(50, parseInt(expected) || 0))
+    Math.max(0, Math.min(50, parseInt(expected) || 0)),
+    cleanSquad,
+    surprise ? 1 : 0
   );
   res.json({ id, creatorKey });
 });
@@ -255,7 +269,153 @@ app.post("/api/hangouts", (req, res) => {
 app.get("/api/hangouts/:id", (req, res) => {
   const h = getHangout(req.params.id);
   if (!h) return res.status(404).json({ error: "Hangout not found." });
+  // Surprise mode: hide the destination until the organizer reveals it
+  if (h.surprise && !h.revealed && h.decidedSlot) {
+    const raw = db.prepare("SELECT creator_key FROM hangouts WHERE id = ?").get(h.id);
+    if (req.query.key !== raw.creator_key) {
+      return res.json({ ...h, decidedPlace: null, surpriseHidden: true });
+    }
+  }
   res.json(h);
+});
+
+app.post("/api/hangouts/:id/reveal", (req, res) => {
+  const raw = db.prepare("SELECT creator_key FROM hangouts WHERE id = ?").get(req.params.id);
+  if (!raw) return res.status(404).json({ error: "Hangout not found." });
+  if (raw.creator_key !== req.body?.creatorKey) return res.status(403).json({ error: "Only the organizer can reveal." });
+  db.prepare("UPDATE hangouts SET revealed = 1 WHERE id = ?").run(req.params.id);
+  res.json(getHangout(req.params.id));
+});
+
+// "I can't make it anymore" after the plan locked. The flake meter remembers.
+app.post("/api/hangouts/:id/bail", (req, res) => {
+  const h = getHangout(req.params.id);
+  if (!h) return res.status(404).json({ error: "Hangout not found." });
+  if (!h.decidedSlot) return res.status(400).json({ error: "Plan isn't locked yet. Just update your answer instead." });
+  const token = resolveToken(req.body?.clientToken);
+  const r = db.prepare("SELECT id FROM responses WHERE hangout_id = ? AND client_token = ?").get(h.id, token);
+  if (!r) return res.status(404).json({ error: "You haven't responded to this hangout." });
+  db.prepare("UPDATE responses SET bailed = 1 WHERE id = ?").run(r.id);
+  res.json(getHangout(h.id));
+});
+
+/* ---------- memories ---------- */
+
+app.post("/api/hangouts/:id/memories", (req, res) => {
+  const h = getHangout(req.params.id);
+  if (!h) return res.status(404).json({ error: "Hangout not found." });
+  if (!h.decidedSlot) return res.status(400).json({ error: "Memories unlock once the plan is locked." });
+  const { photo, caption, name } = req.body || {};
+  if (!photo || !String(photo).startsWith("data:image/") || photo.length > 500000) {
+    return res.status(400).json({ error: "Photo missing or too large." });
+  }
+  const count = db.prepare("SELECT COUNT(*) AS c FROM memories WHERE hangout_id = ?").get(h.id).c;
+  if (count >= 30) return res.status(400).json({ error: "This hangout's memory wall is full!" });
+  db.prepare("INSERT INTO memories (hangout_id, user_name, photo, caption) VALUES (?, ?, ?, ?)").run(
+    h.id,
+    String(name || "someone").slice(0, 40),
+    photo,
+    String(caption || "").slice(0, 120)
+  );
+  res.json({ ok: true });
+});
+
+app.get("/api/hangouts/:id/memories", (req, res) => {
+  const rows = db
+    .prepare("SELECT user_name, photo, caption, created_at FROM memories WHERE hangout_id = ? ORDER BY id DESC")
+    .all(req.params.id);
+  res.json({ memories: rows });
+});
+
+/* ---------- squads ---------- */
+
+app.post("/api/squads", (req, res) => {
+  const u = userFromToken(req.body?.token);
+  if (!u) return res.status(401).json({ error: "Log in first." });
+  const name = String(req.body?.name || "").trim().slice(0, 40);
+  if (!name) return res.status(400).json({ error: "Give your squad a name!" });
+  const id = nanoid(8);
+  db.prepare("INSERT INTO squads (id, name, emoji, owner) VALUES (?, ?, ?, ?)").run(
+    id, name, String(req.body?.emoji || "🎈").slice(0, 8), u.id
+  );
+  db.prepare("INSERT INTO squad_members (squad_id, user_id) VALUES (?, ?)").run(id, u.id);
+  res.json({ id });
+});
+
+app.get("/api/squads", (req, res) => {
+  const u = userFromToken(String(req.query.token || ""));
+  if (!u) return res.status(401).json({ error: "Log in first." });
+  const squads = db.prepare(`
+    SELECT s.id, s.name, s.emoji,
+      (SELECT COUNT(*) FROM squad_members m WHERE m.squad_id = s.id) AS members,
+      (SELECT COUNT(*) FROM hangouts h WHERE h.squad_id = s.id) AS hangouts
+    FROM squads s JOIN squad_members sm ON sm.squad_id = s.id
+    WHERE sm.user_id = ? ORDER BY s.created_at DESC
+  `).all(u.id);
+  res.json({ squads });
+});
+
+app.post("/api/squads/:id/join", (req, res) => {
+  const u = userFromToken(req.body?.token);
+  if (!u) return res.status(401).json({ error: "Log in first." });
+  if (!db.prepare("SELECT id FROM squads WHERE id = ?").get(req.params.id)) {
+    return res.status(404).json({ error: "Squad not found." });
+  }
+  db.prepare("INSERT OR IGNORE INTO squad_members (squad_id, user_id) VALUES (?, ?)").run(req.params.id, u.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/squads/:id", (req, res) => {
+  const s = db.prepare("SELECT * FROM squads WHERE id = ?").get(req.params.id);
+  if (!s) return res.status(404).json({ error: "Squad not found." });
+  const u = userFromToken(String(req.query.token || ""));
+  const isMember = u && Boolean(db.prepare("SELECT 1 FROM squad_members WHERE squad_id = ? AND user_id = ?").get(s.id, u.id));
+
+  const members = db.prepare(`
+    SELECT us.id, us.name, us.seed FROM squad_members m JOIN users us ON us.id = m.user_id WHERE m.squad_id = ?
+  `).all(s.id);
+
+  const hangouts = db.prepare(`
+    SELECT id, title, decided_slot, canceled_at,
+      (SELECT COUNT(*) FROM memories mm WHERE mm.hangout_id = hangouts.id) AS memory_count
+    FROM hangouts WHERE squad_id = ? ORDER BY created_at DESC LIMIT 20
+  `).all(s.id);
+
+  // Flake meter: committed = available for the locked slot and didn't bail
+  const leaderboard = members.map((m) => {
+    const rows = db.prepare(`
+      SELECT r.slots, r.bailed, h.decided_slot FROM responses r
+      JOIN hangouts h ON h.id = r.hangout_id
+      WHERE h.squad_id = ? AND r.client_token = ? AND h.decided_slot IS NOT NULL AND h.canceled_at IS NULL
+    `).all(s.id, `user:${m.id}`);
+    let committed = 0, flakes = 0;
+    for (const r of rows) {
+      const available = JSON.parse(r.slots).includes(r.decided_slot);
+      if (r.bailed) flakes++;
+      else if (available) committed++;
+    }
+    const total = committed + flakes;
+    return {
+      name: m.name,
+      seed: m.seed,
+      committed,
+      flakes,
+      score: total === 0 ? null : Math.round((committed / total) * 100),
+    };
+  }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+
+  const memories = db.prepare(`
+    SELECT mm.photo, mm.caption, mm.user_name, h.title FROM memories mm
+    JOIN hangouts h ON h.id = mm.hangout_id WHERE h.squad_id = ? ORDER BY mm.id DESC LIMIT 12
+  `).all(s.id);
+
+  res.json({
+    id: s.id, name: s.name, emoji: s.emoji, isMember,
+    members, hangouts: hangouts.map((h) => ({
+      id: h.id, title: h.title, decidedSlot: h.decided_slot, canceledAt: h.canceled_at, memoryCount: h.memory_count,
+    })),
+    leaderboard, memories,
+  });
 });
 
 app.post("/api/hangouts/:id/respond", (req, res) => {
@@ -543,7 +703,7 @@ async function runAssistant(req, res, hangout) {
   }
 
   const cleanNearby = Array.isArray(nearby)
-    ? nearby.slice(0, 12).map((n) => ({
+    ? nearby.slice(0, 40).map((n) => ({
         name: String(n.name || "").slice(0, 60),
         kind: String(n.kind || "").slice(0, 30),
       })).filter((n) => n.name)

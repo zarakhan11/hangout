@@ -11,7 +11,7 @@ export const VIBES = [
 // Each idea: title, desc, tags it matches, time blocks it fits, group size fit
 const IDEA_BANK = [
   { t: "Try a new restaurant none of you have been to", d: "Everyone drops one spot in the chat, spin a wheel, no vetoes allowed.", tags: ["food", "adventure"], blocks: ["afternoon", "evening"], min: 2, max: 12 },
-  { t: "Potluck picnic", d: "Everyone brings one dish or snack — park, blanket, zero reservations needed.", tags: ["food", "outdoors", "chill"], blocks: ["morning", "afternoon"], min: 3, max: 20 },
+  { t: "Potluck picnic", d: "Everyone brings one dish or snack. Park, blanket, zero reservations needed.", tags: ["food", "outdoors", "chill"], blocks: ["morning", "afternoon"], min: 3, max: 20 },
   { t: "Café-hop and rank them", d: "Hit 2–3 coffee shops in one walk and rate them like judges on a cooking show.", tags: ["coffee", "food", "chill"], blocks: ["morning", "afternoon"], min: 2, max: 6 },
   { t: "Movie marathon with a theme", d: "Pick a trilogy or a terrible-movie theme. Blankets, snacks, commentary encouraged.", tags: ["movies", "chill"], blocks: ["evening", "night"], min: 2, max: 10 },
   { t: "Go see whatever's in theaters", d: "Lowest-effort classic. Bonus: everyone rates it out of 10 after.", tags: ["movies"], blocks: ["afternoon", "evening", "night"], min: 2, max: 10 },
@@ -19,12 +19,12 @@ const IDEA_BANK = [
   { t: "Video game tournament", d: "Bracket-style on whatever party game you own. Winner picks where you eat next time.", tags: ["games"], blocks: ["evening", "night"], min: 3, max: 8 },
   { t: "Sunrise or sunset hike", d: "Short trail, big view, group photo at the top. Bring water.", tags: ["outdoors", "adventure", "sports"], blocks: ["morning", "evening"], min: 2, max: 10 },
   { t: "Bike or walk a new neighborhood", d: "Pick a part of town nobody knows and just explore it. End at a food spot.", tags: ["outdoors", "adventure", "food"], blocks: ["morning", "afternoon"], min: 2, max: 8 },
-  { t: "Pickup game at the park", d: "Basketball, soccer, volleyball — whatever you can scrape a ball together for.", tags: ["sports", "outdoors"], blocks: ["morning", "afternoon", "evening"], min: 4, max: 14 },
+  { t: "Pickup game at the park", d: "Basketball, soccer, volleyball, whatever you can scrape a ball together for.", tags: ["sports", "outdoors"], blocks: ["morning", "afternoon", "evening"], min: 4, max: 14 },
   { t: "Thrift store challenge", d: "Set a $10 budget: find the best, weirdest, or most cursed item. Group vote decides.", tags: ["shopping", "games", "adventure"], blocks: ["afternoon"], min: 2, max: 8 },
   { t: "Farmers market run", d: "Wander, sample everything, and cook something together with what you buy.", tags: ["shopping", "food", "outdoors"], blocks: ["morning", "afternoon"], min: 2, max: 6 },
-  { t: "Live music at a local venue", d: "Find a cheap local show or open mic — small venues, big memories.", tags: ["music", "adventure"], blocks: ["evening", "night"], min: 2, max: 10 },
+  { t: "Live music at a local venue", d: "Find a cheap local show or open mic. Small venues, big memories.", tags: ["music", "adventure"], blocks: ["evening", "night"], min: 2, max: 10 },
   { t: "Karaoke night", d: "Private room if you're shy, open stage if you're brave. No skips on group songs.", tags: ["music", "games"], blocks: ["evening", "night"], min: 3, max: 12 },
-  { t: "Museum or gallery day", d: "Most museums have free or student days — split up, then show each other your favorite piece.", tags: ["art", "chill"], blocks: ["morning", "afternoon"], min: 2, max: 8 },
+  { t: "Museum or gallery day", d: "Most museums have free or student days. Split up, then show each other your favorite piece.", tags: ["art", "chill"], blocks: ["morning", "afternoon"], min: 2, max: 8 },
   { t: "Paint & snack night", d: "Cheap canvases, one YouTube tutorial, everyone paints the same thing. Compare disasters.", tags: ["art", "chill", "games"], blocks: ["evening", "night"], min: 3, max: 10 },
   { t: "Study session with snack breaks", d: "Library or café, phones in the middle, 50/10 pomodoro. Snacks are the reward.", tags: ["study", "coffee", "chill"], blocks: ["morning", "afternoon", "evening"], min: 2, max: 8 },
   { t: "Cook-off night", d: "Split into teams, one secret ingredient, everyone eats the results. Judge dramatically.", tags: ["food", "games"], blocks: ["evening"], min: 4, max: 10 },
@@ -61,7 +61,7 @@ export function localIdeas(hangout) {
     if (matchedTags.length > 0) {
       const top = matchedTags.sort((a, b) => b.c - a.c)[0];
       why = `${top.c} of ${groupSize} of you are into ${top.tag}`;
-      if (block && idea.blocks.includes(block)) why += ` — and it's perfect for the ${BLOCK_LABELS[block]}`;
+      if (block && idea.blocks.includes(block)) why += `, and it's perfect for the ${BLOCK_LABELS[block]}`;
       why += ".";
     } else if (block && idea.blocks.includes(block)) {
       why = `Great fit for the ${BLOCK_LABELS[block]}.`;
@@ -83,7 +83,7 @@ export async function aiIdeas(hangout) {
 
   const prompt = `You suggest hangout ideas for a group of friends. Reply with ONLY a JSON array of exactly 4 objects, each {"title": "...", "description": "...", "why": "..."}. Keep titles under 8 words, descriptions under 25 words, "why" under 15 words and personalized to this group's data.
 
-Group: "${hangout.title}" — ${groupSize} people.
+Group: "${hangout.title}", ${groupSize} people.
 Time of day: ${block}.
 What they're into (tag: how many picked it): ${JSON.stringify(tagCounts)}.
 ${hangout.note ? `Organizer's note: ${hangout.note}` : ""}`;
@@ -208,13 +208,13 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
       }
       return {
         reply:
-          "Nothing mapped near you matches that exactly — my local data has gaps. Try asking for a category I can scan (food, coffee, shops, activities), or check the Good Spots section.",
+          "Nothing mapped near you matches that exactly. My local data has gaps. Try asking for a category I can scan (food, coffee, shops, activities), or check the Good Spots section.",
         ideas: [],
       };
     }
     return {
       reply:
-        "Straight answer: my built-in engine can't name specific places on its own. Tap 📡 Enable local intel below and I'll pull real spots around you — then ask me that again.",
+        "Straight answer: my built-in engine can't name specific places on its own. Tap 📡 Enable local intel below and I'll pull real spots around you, then ask me that again.",
       ideas: [],
     };
   }
@@ -248,7 +248,7 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
   if (nearby.length > 0 && wantsPlace) {
     const spots = nearby.slice(0, 3).map((n) => ({
       title: `📍 ${n.name}`,
-      description: n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1)} near you — verified in your area.` : "Near you — verified in your area.",
+      description: n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1)} near you, verified in your area.` : "Near you — verified in your area.",
     }));
     picks = [...spots, ...picks].slice(0, 4);
     return {
@@ -260,7 +260,7 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
   const openers = [
     `Analysis complete. For "${hangout.title}" with ${groupSize} attendees, I'd recommend the following:`,
     `Running the numbers on your group's preferences... optimal options identified:`,
-    `Certainly. Cross-referencing your group's vibe profile — these rank highest:`,
+    `Certainly. Cross-referencing your group's vibe profile. These rank highest:`,
     `Scanning local possibilities... I've narrowed it to these:`,
   ];
   const opener = openers[(q.length + groupSize) % openers.length];
@@ -274,7 +274,7 @@ export async function assistant(hangout, question, userVibes = [], nearby = [], 
     const tagCounts = {};
     for (const r of hangout.responses) for (const t of r.interests || []) tagCounts[t] = (tagCounts[t] || 0) + 1;
     const block = hangout.decidedSlot ? hangout.decidedSlot.split("|")[1] : "not decided yet";
-    const system = `You are JAX, a sleek futuristic assistant built into the Hangout app — think JARVIS from Iron Man: polished, confident, subtly witty. Answer the user's ACTUAL question directly — if they ask "which thrift store?", name specific options or say honestly what you'd need to know; never dodge a direct question with generic suggestions. Keep replies to 2-3 short sentences. Reply with ONLY JSON: {"reply": "...", "ideas": [{"title": "...", "description": "..."}]} with 0-3 ideas (omit ideas when the question doesn't call for them).
+    const system = `You are JAX, a sleek futuristic assistant built into the Hangout app — think JARVIS from Iron Man: polished, confident, subtly witty. Answer the user's ACTUAL question directly — if they ask "which thrift store?", name specific options or say honestly what you'd need to know; never dodge a direct question with generic suggestions. Keep replies to 2-3 short sentences. Never use em dashes or hyphens as punctuation in your replies; use commas or periods instead. Reply with ONLY JSON: {"reply": "...", "ideas": [{"title": "...", "description": "..."}]} with 0-3 ideas (omit ideas when the question doesn't call for them).
 
 Group: "${hangout.title}", ${groupSize} people, time: ${block}.
 Group interests: ${JSON.stringify(tagCounts)}.
