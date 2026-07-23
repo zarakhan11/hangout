@@ -141,7 +141,7 @@ const KEYWORDS = {
   study: ["study", "homework", "exam", "finals", "work"],
 };
 
-function localAssistant(hangout, question, userVibes = [], nearby = [], history = []) {
+function localAssistant(hangout, question, userVibes = [], nearby = [], history = [], exclude = []) {
   const q = (question || "").toLowerCase();
 
   // Follow-up questions ("which one?", "where exactly?") — answer directly
@@ -153,20 +153,51 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
 
   if (isFollowUp) {
     if (nearby.length > 0) {
-      // Try to match the question against real nearby places first
+      // Try to match the question against real nearby places first —
+      // expanding words with synonyms so "thrift" finds "second hand" etc.
+      const SYNONYMS = {
+        thrift: ["second", "second_hand", "charity", "vintage", "clothes"],
+        store: ["shop", "clothes", "books", "gift", "mall", "second"],
+        shop: ["clothes", "books", "gift", "mall", "second", "vintage"],
+        eat: ["restaurant", "fast_food", "food"],
+        food: ["restaurant", "fast_food"],
+        restaurant: ["food", "fast_food"],
+        coffee: ["cafe"],
+        cafe: ["coffee"],
+        boba: ["juice", "cafe"],
+        movie: ["cinema", "theatre"],
+        bowl: ["bowling"],
+        arcade: ["amusement"],
+        park: ["park"],
+      };
       const words = q.split(/\W+/).filter((w) => w.length > 3);
+      const expanded = new Set(words);
+      for (const w of words) {
+        for (const [key, syns] of Object.entries(SYNONYMS)) {
+          if (w.startsWith(key) || key.startsWith(w)) syns.forEach((s) => expanded.add(s));
+        }
+      }
+      const terms = [...expanded];
       const hits = nearby.filter((n) =>
-        words.some((w) => n.name.toLowerCase().includes(w) || (n.kind || "").toLowerCase().includes(w))
+        terms.some(
+          (w) =>
+            n.name.toLowerCase().includes(w) ||
+            (n.kind || "").toLowerCase().replace(/_/g, " ").includes(w.replace(/_/g, " "))
+        )
       );
-      const list = (hits.length > 0 ? hits : nearby).slice(0, 4);
+      if (hits.length > 0) {
+        return {
+          reply: "Here's what matches near you:",
+          ideas: hits.slice(0, 4).map((n) => ({
+            title: `📍 ${n.name}`,
+            description: n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1).replace(/_/g, " ")}, near your location.` : "Near your location.",
+          })),
+        };
+      }
       return {
-        reply: hits.length > 0
-          ? "Here's what matches near you:"
-          : "I can't name that one specifically, but these are real spots mapped near you:",
-        ideas: list.map((n) => ({
-          title: `📍 ${n.name}`,
-          description: n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1)}, near your location.` : "Near your location.",
-        })),
+        reply:
+          "Nothing mapped near you matches that exactly — my local data has gaps. Try asking for a category I can scan (food, coffee, shops, activities), or check the Good Spots section.",
+        ideas: [],
       };
     }
     return {
@@ -185,7 +216,11 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
   const groupSize = Math.max(hangout.responses.length, 2);
   const block = hangout.decidedSlot ? hangout.decidedSlot.split("|")[1] : null;
 
-  let pool = IDEA_BANK.map((idea) => {
+  // Don't re-pitch ideas this chat has already seen — dig deeper instead
+  let bank = IDEA_BANK.filter((i) => !exclude.includes(i.t));
+  if (bank.length < 4) bank = IDEA_BANK;
+
+  let pool = bank.map((idea) => {
     let score = 0;
     for (const t of idea.tags) if (matched.has(t)) score += 2;
     if (block && idea.blocks.includes(block)) score += 2;
@@ -220,7 +255,7 @@ function localAssistant(hangout, question, userVibes = [], nearby = [], history 
   return { reply: opener, ideas: picks };
 }
 
-export async function assistant(hangout, question, userVibes = [], nearby = [], history = []) {
+export async function assistant(hangout, question, userVibes = [], nearby = [], history = [], exclude = []) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (apiKey) {
     const groupSize = hangout.responses.length || 2;
@@ -232,7 +267,8 @@ export async function assistant(hangout, question, userVibes = [], nearby = [], 
 Group: "${hangout.title}", ${groupSize} people, time: ${block}.
 Group interests: ${JSON.stringify(tagCounts)}.
 This user's own vibes: ${JSON.stringify(userVibes)}.
-${nearby.length > 0 ? `REAL places near the user right now (prefer these when they ask where to go — they are verified nearby): ${JSON.stringify(nearby)}.` : ""}`;
+${nearby.length > 0 ? `REAL places near the user right now (prefer these when they ask where to go — they are verified nearby): ${JSON.stringify(nearby)}.` : ""}
+${exclude.length > 0 ? `Ideas already suggested in this chat (do NOT repeat them): ${JSON.stringify(exclude.slice(0, 20))}.` : ""}`;
 
     const messages = [
       ...history.slice(-8).map((h) => ({
@@ -276,5 +312,5 @@ ${nearby.length > 0 ? `REAL places near the user right now (prefer these when th
       }
     } catch {}
   }
-  return { source: "local", ...localAssistant(hangout, question, userVibes, nearby, history) };
+  return { source: "local", ...localAssistant(hangout, question, userVibes, nearby, history, exclude) };
 }
