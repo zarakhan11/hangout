@@ -52,23 +52,39 @@ function parseElements(elements) {
     .sort((a, b) => b.score - a.score);
 }
 
+function buildQuery(qsList, lat, lon, radius, limit) {
+  // nwr covers nodes, ways, and relations in one clause: much faster to evaluate
+  const clauses = qsList.map((q) => `nwr${q}(around:${radius},${lat},${lon});`).join("");
+  return `[out:json][timeout:20];(${clauses});out center tags ${limit};`;
+}
+
 export async function fetchNearby(cat, lat, lon) {
-  const radius = 4000; // ~2.5 miles
-  const clauses = cat.qs
-    .map((q) => `node${q}(around:${radius},${lat},${lon});way${q}(around:${radius},${lat},${lon});`)
-    .join("");
-  const data = await overpass(`[out:json][timeout:15];(${clauses});out center tags 50;`);
+  const data = await overpass(buildQuery(cat.qs, lat, lon, 4000, 40));
   return parseElements(data.elements).slice(0, 6);
 }
 
-// One combined scan across EVERY category — used by JAX's local intel
+// Full scan across every category, used by JAX's local intel.
+// One giant query times out on the free map service, so we run 4 smaller
+// batches, two at a time, and keep whatever succeeds.
 export async function fetchAllNearby(lat, lon) {
-  const radius = 4000;
-  const clauses = CATS.flatMap((c) =>
-    c.qs.map((q) => `node${q}(around:${radius},${lat},${lon});way${q}(around:${radius},${lat},${lon});`)
-  ).join("");
-  const data = await overpass(`[out:json][timeout:20];(${clauses});out center tags 120;`);
-  return parseElements(data.elements).slice(0, 40).map((p) => ({ name: p.name, kind: p.kind }));
+  const groups = [
+    [...CATS[0].qs, ...CATS[1].qs], // food + cafés
+    [...CATS[2].qs, ...CATS[3].qs], // fun + culture
+    [...CATS[4].qs, ...CATS[5].qs], // outdoors + sports
+    [...CATS[6].qs, ...CATS[7].qs], // shops + night
+  ];
+  const all = [];
+  for (let i = 0; i < groups.length; i += 2) {
+    const wave = await Promise.all(
+      groups.slice(i, i + 2).map((qs) =>
+        overpass(buildQuery(qs, lat, lon, 3000, 30))
+          .then((d) => d.elements || [])
+          .catch(() => [])
+      )
+    );
+    wave.forEach((els) => all.push(...els));
+  }
+  return parseElements(all).slice(0, 40).map((p) => ({ name: p.name, kind: p.kind }));
 }
 
 export function getLocation() {

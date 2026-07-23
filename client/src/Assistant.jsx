@@ -200,7 +200,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
   };
 
   const enableLocation = async () => {
-    setMsgs((m) => [...m, { who: "bot", text: "Acquiring your coordinates… scanning the local grid." }]);
+    setMsgs((m) => [...m, { who: "bot", text: "Acquiring your coordinates and scanning the local grid. This takes about 30 seconds, hang tight." }]);
     try {
       const { lat, lon } = await getLocation();
       const flat = await fetchAllNearby(lat, lon);
