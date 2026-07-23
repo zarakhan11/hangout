@@ -390,6 +390,51 @@ a.spot:hover { border-color: var(--brand); }
 .paywall .btn, .paywall .ask-row { width: 100%; }
 .paywall-pitch { color: var(--muted); font-size: 0.8rem; }
 
+/* ---------- v10: squads, memories, countdown ---------- */
+.squad-badge {
+  background: rgba(139, 123, 255, 0.12);
+  border: 1px solid rgba(139, 123, 255, 0.4);
+  border-radius: 12px; padding: 10px 14px; font-size: 0.9rem;
+}
+.surprise-toggle { text-align: left; white-space: normal; }
+.score-good { color: var(--mint); }
+.score-mid { color: var(--accent); }
+.score-bad { color: var(--danger); }
+.flaked { display: block; text-decoration: none; }
+.memory-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.memory { margin: 0; }
+.memory img {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: 12px; border: 1px solid var(--line);
+}
+.memory figcaption {
+  font-size: 0.68rem; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-top: 2px;
+}
+.countdown {
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+  padding: 10px 0;
+}
+.cd-digits { display: flex; gap: 14px; }
+.cd-digits span { display: flex; align-items: baseline; gap: 3px; }
+.cd-digits b {
+  font-size: 2rem; font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, #8b7bff, #5cc8ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.cd-digits small { color: var(--muted); }
+.live-now b {
+  font-size: 1.4rem; letter-spacing: 0.06em;
+  color: var(--mint); animation: blink 1.4s steps(2) infinite;
+}
+.surprise-box {
+  border: 1.5px dashed rgba(92, 200, 255, 0.5);
+  border-radius: 14px; padding: 14px; font-size: 0.95rem; font-weight: 500;
+}
+
 /* ---------- misc ---------- */
 .error {
   background: rgba(255, 107, 129, 0.12); color: var(--danger);

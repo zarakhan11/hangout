@@ -11,7 +11,8 @@ async function req(url, opts) {
 export const createHangout = (body) =>
   req("/api/hangouts", { method: "POST", body: JSON.stringify(body) });
 
-export const getHangout = (id) => req(`/api/hangouts/${id}`);
+export const getHangout = (id, key) =>
+  req(`/api/hangouts/${id}${key ? `?key=${encodeURIComponent(key)}` : ""}`);
 
 export const respond = (id, body) =>
   req(`/api/hangouts/${id}/respond`, { method: "POST", body: JSON.stringify(body) });
@@ -28,6 +29,30 @@ export const editHangout = (id, body) =>
 export const getIdeas = (id) => req(`/api/hangouts/${id}/ideas`);
 
 export const calendarUrl = (id) => `/api/hangouts/${id}/calendar.ics`;
+
+export const bail = (id, clientToken) =>
+  req(`/api/hangouts/${id}/bail`, { method: "POST", body: JSON.stringify({ clientToken }) });
+
+export const reveal = (id, creatorKey) =>
+  req(`/api/hangouts/${id}/reveal`, { method: "POST", body: JSON.stringify({ creatorKey }) });
+
+export const addMemory = (id, body) =>
+  req(`/api/hangouts/${id}/memories`, { method: "POST", body: JSON.stringify(body) });
+
+export const getMemories = (id) => req(`/api/hangouts/${id}/memories`);
+
+export const createSquad = (body) =>
+  req("/api/squads", { method: "POST", body: JSON.stringify(body) });
+
+export const mySquads = (token) => req(`/api/squads?token=${encodeURIComponent(token || "")}`);
+
+export const getSquad = (id, token) =>
+  req(`/api/squads/${id}?token=${encodeURIComponent(token || "")}`);
+
+export const joinSquad = (id, token) =>
+  req(`/api/squads/${id}/join`, { method: "POST", body: JSON.stringify({ token }) });
+
+export const BLOCK_START = { morning: 9, afternoon: 12, evening: 17, night: 21 };
 
 // --- tiny local persistence for "who am I" per hangout ---
 export const remember = (id, data) =>

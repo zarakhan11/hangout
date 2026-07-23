@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   getHangout, respond, decideNow, cancelHangout, editHangout, getIdeas, calendarUrl,
-  remember, recall, BLOCKS, VIBES, fmtDay, blockInfo,
+  bail, reveal, remember, recall, BLOCKS, VIBES, fmtDay, blockInfo,
 } from "./api.js";
-import { recordHangout } from "./profile.js";
+import { recordHangout, getProfile } from "./profile.js";
 import Avatar from "./avatar.jsx";
 import Assistant from "./Assistant.jsx";
 import Nearby from "./Nearby.jsx";
+import { Countdown, MemoryWall, RecapButton } from "./Extras.jsx";
+import { getMemories } from "./api.js";
 
 export default function HangoutPage({ profile }) {
   const { id } = useParams();
@@ -19,7 +21,7 @@ export default function HangoutPage({ profile }) {
 
   const load = useCallback(async () => {
     try {
-      const data = await getHangout(id);
+      const data = await getHangout(id, recall(id).creatorKey);
       setH(data);
     } catch (err) {
       setError(err.message);
@@ -52,7 +54,7 @@ export default function HangoutPage({ profile }) {
 
   if (h.canceledAt) return <Canceled h={h} />;
   return h.decidedSlot
-    ? <Decided h={h} />
+    ? <Decided h={h} me={me} profile={profile} setH={setH} />
     : <Open h={h} me={me} isNew={isNew} setH={setH} profile={profile} />;
 }
 
@@ -455,12 +457,17 @@ function GridRow({ d, h, slots, toggleSlot }) {
 
 /* ---------- decided ---------- */
 
-function Decided({ h }) {
+function Decided({ h, me, profile, setH }) {
   const [date, block] = h.decidedSlot.split("|");
   const info = blockInfo(block);
-  const going = h.responses.filter((r) => r.slots.includes(h.decidedSlot));
+  const going = h.responses.filter((r) => r.slots.includes(h.decidedSlot) && !r.bailed);
+  const flaked = h.responses.filter((r) => r.bailed);
+  const myName = me?.name || profile?.name;
+  const iAmGoing = going.some((r) => r.name === myName);
+  const isCreator = Boolean(me?.creatorKey);
   const [ideas, setIdeas] = useState(null);
   const [ideasBusy, setIdeasBusy] = useState(false);
+  const [memories, setMemories] = useState([]);
   const fetched = useRef(false);
 
   const loadIdeas = async () => {
@@ -469,25 +476,50 @@ function Decided({ h }) {
     setIdeasBusy(false);
   };
   useEffect(() => {
-    if (!fetched.current) { fetched.current = true; loadIdeas(); }
+    if (!fetched.current) {
+      fetched.current = true;
+      loadIdeas();
+      getMemories(h.id).then((d) => setMemories(d.memories)).catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const doBail = async () => {
+    if (!confirm("Bail on this plan? The flake meter will remember this. 😬")) return;
+    try { setH(await bail(h.id, profile?.token)); } catch (err) { alert(err.message); }
+  };
+
+  const doReveal = async () => {
+    if (!confirm("Reveal the surprise to everyone?")) return;
+    try { setH(await reveal(h.id, me.creatorKey)); } catch (err) { alert(err.message); }
+  };
 
   return (
     <div className="page">
       <header className="head">
         <Link to="/" className="logo small">🎈 Hangout</Link>
-        <div className="tada">🎉</div>
-        <h1>It's happening!</h1>
+        <div className="tada">{h.surpriseHidden ? "🎲" : "🎉"}</div>
+        <h1>{h.surpriseHidden ? "It's a surprise!" : "It's happening!"}</h1>
         <p className="byline">{h.title}</p>
+        {h.squadId && <Link className="link-btn" to={`/squad/${h.squadId}`}>view squad →</Link>}
       </header>
 
       <div className="card decided-card">
+        <Countdown h={h} />
         <div className="when">
           <b>{fmtDay(date, { long: true })}</b>
           <span>{info.emoji} {info.label} <em>({info.hint})</em></span>
         </div>
-        {h.decidedPlace && <div className="where">📍 {h.decidedPlace}</div>}
+        {h.surpriseHidden ? (
+          <div className="where surprise-box">
+            🎲 JAX has planned this one. Destination classified until the organizer reveals it. Trust the orb.
+          </div>
+        ) : (
+          h.decidedPlace && <div className="where">📍 {h.decidedPlace}</div>
+        )}
+        {h.surprise && !h.revealed && isCreator && (
+          <button className="btn primary" onClick={doReveal}>🎲 Reveal the surprise to everyone</button>
+        )}
         <Faces responses={going} expected={0} />
         <div className="who">
           <span className="muted">
@@ -496,10 +528,19 @@ function Decided({ h }) {
               : `${going.length} of ${h.responses.length} can make it`}
             : {going.map((r) => r.name).join(", ")}
           </span>
+          {flaked.length > 0 && (
+            <span className="muted tiny flaked"> 😭 flaked: {flaked.map((r) => r.name).join(", ")}</span>
+          )}
         </div>
         <a className="btn primary big" href={calendarUrl(h.id)}>📅 Add to calendar</a>
         <ShareCard title={h.title} text={`Locked in: ${h.title}. ${fmtDay(date, { long: true })}, ${info.label}.`} />
+        <RecapButton h={h} going={going} memories={memories} />
+        {iAmGoing && (
+          <button className="link-btn" onClick={doBail}>😬 I can't make it anymore</button>
+        )}
       </div>
+
+      <MemoryWall h={h} myName={myName} />
 
       <Assistant hangout={h} />
 

@@ -13,6 +13,7 @@ function ScrollToTop() {
 import Home from "./Home.jsx";
 import HangoutPage from "./HangoutPage.jsx";
 import Onboarding from "./Onboarding.jsx";
+import SquadPage from "./Squads.jsx";
 import { getProfile } from "./profile.js";
 import "./styles.css";
 
@@ -33,6 +34,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home profile={profile} onResetProfile={() => setProfile(null)} />} />
         <Route path="/h/:id" element={<HangoutPage profile={profile} />} />
+        <Route path="/squad/:id" element={<SquadPage />} />
       </Routes>
     </BrowserRouter>
   );

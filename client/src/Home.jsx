@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { SquadsCard } from "./Squads.jsx";
 import { createHangout, getHangout, remember, BLOCKS, fmtDay, blockInfo } from "./api.js";
 import { clearProfile, getHistory, recordHangout } from "./profile.js";
 import Avatar from "./avatar.jsx";
@@ -75,8 +76,12 @@ function nextDays(n = 14) {
 
 export default function Home({ profile, onResetProfile }) {
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const squadId = params.get("squad");
+  const squadName = params.get("squadName");
   const candidates = useMemo(() => nextDays(14), []);
   const [title, setTitle] = useState("");
+  const [surprise, setSurprise] = useState(false);
   const [note, setNote] = useState("");
   const [days, setDays] = useState([]);
   const [blocks, setBlocks] = useState([]);
@@ -105,6 +110,7 @@ export default function Home({ profile, onResetProfile }) {
     try {
       const { id, creatorKey } = await createHangout({
         title, creator: profile.name, note, days, blocks, places, expected,
+        squadId: squadId || undefined, surprise, clientToken: profile.token,
       });
       remember(id, { creatorKey, name: profile.name });
       recordHangout({ id, title: title.trim(), role: "organizer" });
@@ -139,6 +145,9 @@ export default function Home({ profile, onResetProfile }) {
       </header>
 
       <form className="card" onSubmit={submit}>
+        {squadName && (
+          <div className="squad-badge">👥 Planning with <b>{squadName}</b></div>
+        )}
         <label className="field">
           <span>What's the hangout?</span>
           <input
@@ -222,6 +231,14 @@ export default function Home({ profile, onResetProfile }) {
           <em className="hint">When everyone's answered, Hangout locks in the plan automatically.</em>
         </div>
 
+        <button
+          type="button"
+          className={`chip tag surprise-toggle ${surprise ? "on" : ""}`}
+          onClick={() => setSurprise(!surprise)}
+        >
+          🎲 Surprise mode: hide the winning spot until I reveal it
+        </button>
+
         <label className="field">
           <span>Note <em>(optional)</em></span>
           <input
@@ -240,6 +257,8 @@ export default function Home({ profile, onResetProfile }) {
       </form>
 
       <Assistant draft={{ title, expected }} onAddPlace={(name) => addPlace(name)} />
+
+      <SquadsCard />
 
       <MyHangouts />
 
