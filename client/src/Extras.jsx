@@ -147,20 +147,31 @@ export function RecapButton({ h, going, memories }) {
 
       ctx.textAlign = "center";
       ctx.fillStyle = "#8b7bff";
-      ctx.font = "bold 56px -apple-system, Arial";
+      ctx.font = "bold 56px Arial, sans-serif";
       ctx.fillText("🎈 HANGOUT RECAP", W / 2, 180);
 
       ctx.fillStyle = "#f2f1fa";
-      ctx.font = "bold 88px -apple-system, Arial";
+      ctx.font = "bold 88px Arial, sans-serif";
       const title = h.title.length > 22 ? h.title.slice(0, 21) + "…" : h.title;
       ctx.fillText(title, W / 2, 320);
 
       ctx.fillStyle = "#9c9ab8";
-      ctx.font = "52px -apple-system, Arial";
+      ctx.font = "52px Arial, sans-serif";
       ctx.fillText(`${fmtDay(date, { long: true })} · ${info.emoji} ${info.label}`, W / 2, 410);
       if (h.decidedPlace) ctx.fillText(`📍 ${h.decidedPlace}`, W / 2, 490);
 
       // photo (first memory) or big emoji
+      // rounded-rect path drawn manually: ctx.roundRect is missing on older iPhones
+      const roundedPath = (x, y, w2, h2, r) => {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w2, y, x + w2, y + h2, r);
+        ctx.arcTo(x + w2, y + h2, x, y + h2, r);
+        ctx.arcTo(x, y + h2, x, y, r);
+        ctx.arcTo(x, y, x + w2, y, r);
+        ctx.closePath();
+      };
+
       if (memories?.length > 0) {
         await new Promise((resolve) => {
           const img = new Image();
@@ -168,8 +179,7 @@ export function RecapButton({ h, going, memories }) {
             const size = 820;
             const x = (W - size) / 2, y = 580;
             ctx.save();
-            ctx.beginPath();
-            ctx.roundRect(x, y, size, size, 48);
+            roundedPath(x, y, size, size, 48);
             ctx.clip();
             const scale = Math.max(size / img.width, size / img.height);
             ctx.drawImage(img, x + (size - img.width * scale) / 2, y + (size - img.height * scale) / 2, img.width * scale, img.height * scale);
@@ -185,15 +195,15 @@ export function RecapButton({ h, going, memories }) {
       }
 
       ctx.fillStyle = "#f2f1fa";
-      ctx.font = "bold 54px -apple-system, Arial";
+      ctx.font = "bold 54px Arial, sans-serif";
       ctx.fillText(`${going.length} pulled up:`, W / 2, 1540);
       ctx.fillStyle = "#9c9ab8";
-      ctx.font = "46px -apple-system, Arial";
+      ctx.font = "46px Arial, sans-serif";
       const names = going.map((r) => r.name).join(" · ");
       ctx.fillText(names.length > 40 ? names.slice(0, 39) + "…" : names, W / 2, 1610);
 
       ctx.fillStyle = "#5cc8ff";
-      ctx.font = "40px -apple-system, Arial";
+      ctx.font = "40px Arial, sans-serif";
       ctx.fillText(`made with Hangout · ${window.location.host}`, W / 2, 1830);
 
       const url = c.toDataURL("image/png");
