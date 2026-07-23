@@ -141,8 +141,40 @@ const KEYWORDS = {
   study: ["study", "homework", "exam", "finals", "work"],
 };
 
-function localAssistant(hangout, question, userVibes = [], nearby = []) {
+function localAssistant(hangout, question, userVibes = [], nearby = [], history = []) {
   const q = (question || "").toLowerCase();
+
+  // Follow-up questions ("which one?", "where exactly?") — answer directly
+  // instead of spamming more generic suggestions.
+  const isFollowUp =
+    history.length > 1 &&
+    /^(?:(?:ok|okay|well|so|but|and|then|yes|yeah|hmm|um|uh)[\s,]+)*(which|where|what|who|how|when)\b/.test(q.trim()) &&
+    q.length < 80;
+
+  if (isFollowUp) {
+    if (nearby.length > 0) {
+      // Try to match the question against real nearby places first
+      const words = q.split(/\W+/).filter((w) => w.length > 3);
+      const hits = nearby.filter((n) =>
+        words.some((w) => n.name.toLowerCase().includes(w) || (n.kind || "").toLowerCase().includes(w))
+      );
+      const list = (hits.length > 0 ? hits : nearby).slice(0, 4);
+      return {
+        reply: hits.length > 0
+          ? "Here's what matches near you:"
+          : "I can't name that one specifically, but these are real spots mapped near you:",
+        ideas: list.map((n) => ({
+          title: `📍 ${n.name}`,
+          description: n.kind ? `${n.kind[0].toUpperCase()}${n.kind.slice(1)}, near your location.` : "Near your location.",
+        })),
+      };
+    }
+    return {
+      reply:
+        "Straight answer: my built-in engine can't name specific places on its own. Tap 📡 Enable local intel below and I'll pull real spots around you — then ask me that again.",
+      ideas: [],
+    };
+  }
   const wantCheap = /cheap|broke|budget|free|\$/.test(q);
   const matched = new Set(userVibes);
   for (const [tag, words] of Object.entries(KEYWORDS)) {
@@ -188,20 +220,28 @@ function localAssistant(hangout, question, userVibes = [], nearby = []) {
   return { reply: opener, ideas: picks };
 }
 
-export async function assistant(hangout, question, userVibes = [], nearby = []) {
+export async function assistant(hangout, question, userVibes = [], nearby = [], history = []) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (apiKey) {
     const groupSize = hangout.responses.length || 2;
     const tagCounts = {};
     for (const r of hangout.responses) for (const t of r.interests || []) tagCounts[t] = (tagCounts[t] || 0) + 1;
     const block = hangout.decidedSlot ? hangout.decidedSlot.split("|")[1] : "not decided yet";
-    const prompt = `You are JAX, a sleek futuristic AI assistant built into the Hangout app — think JARVIS from Iron Man: polished, confident, subtly witty, always one step ahead. Address the user smoothly (e.g. "Certainly." / "Already on it."), keep it to 2-3 short sentences, lightly futuristic phrasing ("running the numbers", "optimal window") without being cheesy. Reply with ONLY JSON: {"reply": "...", "ideas": [{"title": "...", "description": "..."}]} with 0-3 ideas (ideas optional if the question doesn't call for them).
+    const system = `You are JAX, a sleek futuristic assistant built into the Hangout app — think JARVIS from Iron Man: polished, confident, subtly witty. Answer the user's ACTUAL question directly — if they ask "which thrift store?", name specific options or say honestly what you'd need to know; never dodge a direct question with generic suggestions. Keep replies to 2-3 short sentences. Reply with ONLY JSON: {"reply": "...", "ideas": [{"title": "...", "description": "..."}]} with 0-3 ideas (omit ideas when the question doesn't call for them).
 
 Group: "${hangout.title}", ${groupSize} people, time: ${block}.
 Group interests: ${JSON.stringify(tagCounts)}.
 This user's own vibes: ${JSON.stringify(userVibes)}.
-${nearby.length > 0 ? `REAL places near the user right now (prefer these when they ask where to go — they are verified nearby): ${JSON.stringify(nearby)}.` : ""}
-Their question: "${(question || "").slice(0, 300)}"`;
+${nearby.length > 0 ? `REAL places near the user right now (prefer these when they ask where to go — they are verified nearby): ${JSON.stringify(nearby)}.` : ""}`;
+
+    const messages = [
+      ...history.slice(-8).map((h) => ({
+        role: h.role === "user" ? "user" : "assistant",
+        content: String(h.text || "").slice(0, 500),
+      })),
+      { role: "user", content: (question || "").slice(0, 300) },
+    ];
+
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -213,7 +253,8 @@ Their question: "${(question || "").slice(0, 300)}"`;
         body: JSON.stringify({
           model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5",
           max_tokens: 600,
-          messages: [{ role: "user", content: prompt }],
+          system,
+          messages,
         }),
       });
       if (res.ok) {
@@ -235,5 +276,5 @@ Their question: "${(question || "").slice(0, 300)}"`;
       }
     } catch {}
   }
-  return { source: "local", ...localAssistant(hangout, question, userVibes, nearby) };
+  return { source: "local", ...localAssistant(hangout, question, userVibes, nearby, history) };
 }

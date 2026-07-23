@@ -514,7 +514,13 @@ app.post("/api/premium/redeem", (req, res) => {
 });
 
 async function runAssistant(req, res, hangout) {
-  const { question, vibes, nearby, clientToken } = req.body || {};
+  const { question, vibes, nearby, clientToken, history } = req.body || {};
+  const cleanHistory = Array.isArray(history)
+    ? history.slice(-10).map((h) => ({
+        role: h.role === "user" ? "user" : "assistant",
+        text: String(h.text || "").slice(0, 500),
+      }))
+    : [];
   const token = resolveToken(clientToken);
 
   const status = jaxStatus(token);
@@ -539,7 +545,7 @@ async function runAssistant(req, res, hangout) {
         kind: String(n.kind || "").slice(0, 30),
       })).filter((n) => n.name)
     : [];
-  const result = await assistant(hangout, question, Array.isArray(vibes) ? vibes : [], cleanNearby);
+  const result = await assistant(hangout, question, Array.isArray(vibes) ? vibes : [], cleanNearby, cleanHistory);
   const after = jaxStatus(token);
   res.json({ ...result, remaining: after.premium ? null : after.remaining, premium: after.premium });
 }
