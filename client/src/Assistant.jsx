@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getProfile } from "./profile.js";
-import { CATS, fetchNearby, getLocation } from "./Nearby.jsx";
+import { fetchAllNearby, getLocation } from "./Nearby.jsx";
 
 const QUICKS = ["What should we do?", "Where should we go?", "Cheap ideas?"];
 
@@ -203,13 +203,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
     setMsgs((m) => [...m, { who: "bot", text: "Acquiring your coordinates… scanning the local grid." }]);
     try {
       const { lat, lon } = await getLocation();
-      const results = await Promise.all(
-        CATS.map((c) => fetchNearby(c, lat, lon).then(
-          (spots) => spots.map((s) => ({ name: s.name, kind: s.cuisine || c.key })),
-          () => []
-        ))
-      );
-      const flat = results.flat().slice(0, 12);
+      const flat = await fetchAllNearby(lat, lon);
       setNearby(flat);
       setMsgs((m) => [
         ...m,
