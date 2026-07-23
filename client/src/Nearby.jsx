@@ -112,14 +112,14 @@ export default function Nearby({ onPick }) {
       <h3>📍 Good spots near you</h3>
       {state === "idle" && (
         <>
-          <p className="muted">Find real restaurants, cafés, activities, shops, and more around you — no account needed.</p>
+          <p className="muted">Find real restaurants, cafés, activities, shops, and more around you. No account needed.</p>
           <button className="btn primary" onClick={() => load()}>Use my location</button>
         </>
       )}
       {(state === "locating" || state === "loading") && <div className="spinner small" />}
       {state === "error" && (
         <>
-          <p className="muted">Couldn't get your location — check that location access is allowed for your browser.</p>
+          <p className="muted">Couldn't get your location. Check that location access is allowed for your browser.</p>
           <button className="btn ghost" onClick={() => load()}>Try again</button>
         </>
       )}
@@ -137,7 +137,7 @@ export default function Nearby({ onPick }) {
             ))}
           </div>
           <div className="nearby-list">
-            {spots?.length === 0 && <p className="muted">Nothing found in this category near you — try another tab.</p>}
+            {spots?.length === 0 && <p className="muted">Nothing found in this category near you. Try another tab.</p>}
             {spots?.map((s) => (
               <div className="spot" key={s.name}>
                 <div className="s-info">

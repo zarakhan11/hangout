@@ -133,8 +133,8 @@ export default function Home({ profile, onResetProfile }) {
         </div>
         <h1>Stop asking. Start hanging.</h1>
         <p>
-          Make a plan, share one link. Friends tap when they're free —
-          Hangout picks the time and place. No 47-message group chat.
+          Make a plan, share one link. Friends tap when they're free,
+          and Hangout picks the time and place. No 47-message group chat.
         </p>
       </header>
 
@@ -151,7 +151,7 @@ export default function Home({ profile, onResetProfile }) {
 
         <div className="field">
           <span>Which days could work?</span>
-          <em className="hint">Tap several — the more days you give, the easier it is for everyone to match.</em>
+          <em className="hint">Tap several! The more days you give, the easier it is for everyone to match.</em>
           <div className="chip-row scroll">
             {candidates.map((d, i) => (
               <button
@@ -185,7 +185,7 @@ export default function Home({ profile, onResetProfile }) {
         </div>
 
         <div className="field">
-          <span>Place options <em>(optional — friends vote)</em></span>
+          <span>Place options <em>(optional, friends vote)</em></span>
           <div className="place-input">
             <input
               value={placeInput}

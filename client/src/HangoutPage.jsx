@@ -319,17 +319,17 @@ function Open({ h, me, isNew, setH, profile }) {
       <header className="head">
         <Link to="/" className="logo small">🎈 Hangout</Link>
         <h1>{h.title}</h1>
-        <p className="byline">{h.creator} is rallying the group{h.note ? ` — “${h.note}”` : ""}</p>
+        <p className="byline">{h.creator} is rallying the group{h.note ? ` “${h.note}”` : ""}</p>
       </header>
 
       <div className="card progress-card">
         <div className="progress-line">
           <b>{h.responses.length}{h.expected ? ` of ${h.expected}` : ""} in</b>
-          {h.expected > 0 && <span className="muted"> — plan locks automatically when everyone's answered</span>}
+          {h.expected > 0 && <span className="muted">. Plan locks automatically when everyone's answered</span>}
         </div>
         <Faces responses={h.responses} expected={h.expected} />
         {isNew && !alreadyIn && (
-          <p className="muted">You made this hangout — now add your own availability 👇</p>
+          <p className="muted">You made this hangout. Now add your own availability 👇</p>
         )}
       </div>
 
@@ -394,7 +394,7 @@ function Open({ h, me, isNew, setH, profile }) {
 
           {error && <div className="error">{error}</div>}
           <button className="btn primary big" onClick={submit} disabled={busy}>
-            {busy ? "Saving…" : alreadyIn ? "Update my answer ✅" : "I'm in — save my times ✅"}
+            {busy ? "Saving…" : alreadyIn ? "Update my answer ✅" : "I'm in! Save my times ✅"}
           </button>
         </div>
       ) : (
@@ -409,11 +409,11 @@ function Open({ h, me, isNew, setH, profile }) {
 
       <div className="card">
         <h3>Get everyone in</h3>
-        <p className="muted">Send this link to the group chat — no app or account needed to answer.</p>
+        <p className="muted">Send this link to the group chat. No app or account needed to answer.</p>
         <ShareCard title={h.title} text={`When are you free for “${h.title}”? Tap your times:`} />
         {isCreator && h.responses.length > 0 && (
           <button className="btn ghost" onClick={lockIn}>
-            ⚡ Don't wait — lock in the plan now
+            ⚡ Don't wait, lock in the plan now
           </button>
         )}
       </div>
@@ -498,7 +498,7 @@ function Decided({ h }) {
           </span>
         </div>
         <a className="btn primary big" href={calendarUrl(h.id)}>📅 Add to calendar</a>
-        <ShareCard title={h.title} text={`Locked in: ${h.title} — ${fmtDay(date, { long: true })}, ${info.label}.`} />
+        <ShareCard title={h.title} text={`Locked in: ${h.title}. ${fmtDay(date, { long: true })}, ${info.label}.`} />
       </div>
 
       <Assistant hangout={h} />

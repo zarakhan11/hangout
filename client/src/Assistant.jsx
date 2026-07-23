@@ -96,7 +96,7 @@ function TypeBubble({ text, ideas, instant, onDone, onTick, onAddPlace }) {
 /* ---------- boot sequence ---------- */
 
 const BOOT = (h, name) => [
-  "▸ JAX — INITIALIZING…",
+  "▸ JAX INITIALIZING…",
   `▸ ONLINE. ${name ? `GOOD TO SEE YOU, ${name.toUpperCase()}.` : "READY."}`,
 ];
 
@@ -193,7 +193,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
       if (!res.ok) throw new Error(data.error);
       setPremium(true);
       setPaywalled(false);
-      setMsgs((m) => [...m, { who: "bot", text: "Premium clearance verified. All limits removed — welcome to the inner circle." }]);
+      setMsgs((m) => [...m, { who: "bot", text: "Premium clearance verified. All limits removed. Welcome to the inner circle." }]);
     } catch (err) {
       setCodeErr(err.message);
     }
@@ -210,7 +210,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
         {
           who: "bot",
           text: flat.length > 0
-            ? `Location intel online. ${flat.length} verified spots mapped in your sector — ask me where to go.`
+            ? `Location intel online. ${flat.length} verified spots mapped in your sector. Ask me where to go.`
             : "Sector scan complete, but no mapped venues found near you. I'll stick to general recommendations.",
         },
       ]);
@@ -235,8 +235,8 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
       setMsgs([{
         who: "bot",
         text: hangout
-          ? `At your service. Ask me anything about "${hangout.title}" — or tap a suggestion below.`
-          : "At your service. Tell me what kind of hangout you want and I'll pitch ideas — turn on 📡 local intel and I'll find real spots near you.",
+          ? `At your service. Ask me anything about "${hangout.title}", or tap a suggestion below.`
+          : "At your service. Tell me what kind of hangout you want and I'll pitch ideas. Turn on 📡 local intel and I'll find real spots near you.",
       }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -269,7 +269,7 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
       if (res.status === 402) {
         setPaywalled(true);
         if (data.paymentLink) setPayLink(data.paymentLink);
-        setMsgs((m) => [...m, { who: "bot", text: "Free query allocation depleted. Premium clearance required to continue — see below." }]);
+        setMsgs((m) => [...m, { who: "bot", text: "Free query allocation depleted. Premium clearance required to continue. See below." }]);
       } else {
         setMsgs((m) => [...m, { who: "bot", text: data.reply, ideas: data.ideas }]);
         if (data.remaining != null) setRemaining(data.remaining);
@@ -371,14 +371,14 @@ export default function Assistant({ hangout = null, draft = null, onAddPlace = n
               <div className="price">$3<small>/month</small></div>
               {paymentsOn ? (
                 <button className="btn primary big" onClick={startCheckout} disabled={payBusy}>
-                  {payBusy ? "Opening secure checkout…" : " Pay · G Pay · Card — Unlock ⚡"}
+                  {payBusy ? "Opening secure checkout…" : " Pay · G Pay · Card · Unlock ⚡"}
                 </button>
               ) : payLink ? (
                 <a className="btn primary big" href={payLink} target="_blank" rel="noreferrer">
                   Unlock JAX Unlimited ⚡
                 </a>
               ) : (
-                <p className="muted tiny">Payments are being set up — check back soon!</p>
+                <p className="muted tiny">Payments are being set up. Check back soon!</p>
               )}
               <button className="link-btn" onClick={() => setShowCode(!showCode)}>
                 {showCode ? "hide code entry" : "have an access code?"}
