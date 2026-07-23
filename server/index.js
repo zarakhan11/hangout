@@ -58,7 +58,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), (req,
   res.json({ received: true });
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "3mb" })); // memory photos come in as base64
 
 const PORT = process.env.PORT || 3000;
 const BLOCK_ORDER = ["morning", "afternoon", "evening", "night"];

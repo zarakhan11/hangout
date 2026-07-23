@@ -144,11 +144,17 @@ const KEYWORDS = {
 function localAssistant(hangout, question, userVibes = [], nearby = [], history = [], exclude = []) {
   const q = (question || "").toLowerCase();
 
-  // Follow-up questions ("which one?", "where exactly?") — answer directly
-  // instead of spamming more generic suggestions.
+  // Follow-up questions like "which one?" or "where exactly?" get a direct
+  // answer. But idea-seeking questions ("what should we do?") always go to
+  // the idea engine, no matter how the sentence starts.
+  const ideaSeeking =
+    /\b(should|could|can)\s+(we|i|us)\b/.test(q) ||
+    /\bideas?\b/.test(q) ||
+    /\bwhat.{0,20}\b(do|doing|plan|tonight|today|weekend)\b/.test(q);
   const isFollowUp =
+    !ideaSeeking &&
     history.length > 1 &&
-    /^(?:(?:ok|okay|well|so|but|and|then|yes|yeah|hmm|um|uh)[\s,]+)*(which|where|what|who|how|when)\b/.test(q.trim()) &&
+    /^(?:(?:ok|okay|well|so|but|and|then|yes|yeah|hmm|um|uh)[\s,]+)*(which|where)\b/.test(q.trim()) &&
     q.length < 80;
 
   if (isFollowUp) {
